@@ -1,0 +1,44 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+from ipywidgets import interact, FloatSlider
+
+def plot_phase_diagram(alpha, beta):
+    def system(Y, t, alpha, beta):
+        G, R = Y
+        dGdt = G * (1 - G) - alpha * G * R
+        dRdt = R * (1 - R) - beta * G * R
+        return [dGdt, dRdt]
+
+    t = np.linspace(0, 10, 500)
+    G_init = np.linspace(0, 1, 10)
+    R_init = np.linspace(0, 1, 10)
+
+    plt.figure(figsize=(8, 6))
+
+    for G0 in G_init:
+        for R0 in R_init:
+            Y0 = [G0, R0]
+            sol = odeint(system, Y0, t, args=(alpha, beta))
+            if sol[-1, 0] > 0 and sol[-1, 1] > 0:
+                plt.plot(sol[:, 0], sol[:, 1], 'k-', alpha=0.3)
+
+    # Vector arrows
+    G_range = np.linspace(0, 1, 20)
+    R_range = np.linspace(0, 1, 20)
+    G_grid, R_grid = np.meshgrid(G_range, R_range)
+    dGdt_grid, dRdt_grid = system([G_grid, R_grid], t, alpha, beta)
+    magnitude = np.sqrt(dGdt_grid**2 + dRdt_grid**2)
+    plt.quiver(G_grid, R_grid, dGdt_grid/magnitude, dRdt_grid/magnitude, angles='xy', alpha=0.6, pivot='mid')
+
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.xlabel('G')
+    plt.ylabel('R')
+    plt.title(f'Phase Diagram (alpha={alpha}, beta={beta})')
+    plt.show()
+
+# Interactive slider
+interact(plot_phase_diagram,
+         alpha=FloatSlider(min=0, max=2, step=0.1, value=1, description='Alpha:'),
+         beta=FloatSlider(min=0, max=2, step=0.1, value=1, description='Beta:'))
