@@ -4,41 +4,53 @@ from scipy.integrate import odeint
 from ipywidgets import interact, FloatSlider
 
 def plot_phase_diagram(alpha, beta):
+    # Define the system of ODEs for grey and red squirrel populations
     def system(Y, t, alpha, beta):
         G, R = Y
         dGdt = G * (1 - G) - alpha * G * R
-        dRdt = R * (1 - R) - beta * G * R
+        dRdt =  R * (1 - R) - beta*G * R
         return [dGdt, dRdt]
 
+    # Set up the time range and initial conditions for the simulation
     t = np.linspace(0, 10, 500)
-    G_init = np.linspace(0, 1, 10)
-    R_init = np.linspace(0, 1, 10)
+    G_init = np.linspace(0, 1, 20)
+    R_init = np.linspace(0, 1, 20)
 
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(12, 9))
 
+    # Simulate the system for different initial conditions and plot the trajectories
     for G0 in G_init:
         for R0 in R_init:
             Y0 = [G0, R0]
             sol = odeint(system, Y0, t, args=(alpha, beta))
-            if sol[-1, 0] > 0 and sol[-1, 1] > 0:
-                plt.plot(sol[:, 0], sol[:, 1], 'k-', alpha=0.3)
+            plt.plot(sol[:, 0], sol[:, 1], 'b-', alpha=0.2, linewidth=0.5)
 
-    # Vector arrows
-    G_range = np.linspace(0, 1, 20)
-    R_range = np.linspace(0, 1, 20)
+    # Create a grid for the vector field and compute the derivatives
+    G_range = np.linspace(0, 1, 30)
+    R_range = np.linspace(0, 1, 30)
     G_grid, R_grid = np.meshgrid(G_range, R_range)
     dGdt_grid, dRdt_grid = system([G_grid, R_grid], t, alpha, beta)
     magnitude = np.sqrt(dGdt_grid**2 + dRdt_grid**2)
-    plt.quiver(G_grid, R_grid, dGdt_grid/magnitude, dRdt_grid/magnitude, angles='xy', alpha=0.6, pivot='mid')
 
+    # Plot the vector field
+    plt.quiver(G_grid, R_grid, dGdt_grid/magnitude, dRdt_grid/magnitude, angles='xy', alpha=0.6, pivot='mid', color='k')
+
+    # Set the plot limits and labels
     plt.xlim(0, 1)
     plt.ylim(0, 1)
-    plt.xlabel('G')
-    plt.ylabel('R')
+    plt.xlabel('Red Squirrels (R)')
+    plt.ylabel('Grey Squirrels (G)')
     plt.title(f'Phase Diagram (alpha={alpha}, beta={beta})')
+
+    # Equilibrium points
+    equilibria = [(0, 0), (1, 0), (0, 1), (1 - alpha, 1 - 1/beta)]
+    for eq in equilibria:
+        plt.plot(eq[0], eq[1], 'ro', markersize=8)
+        plt.annotate(f'({eq[0]:.2f}, {eq[1]:.2f})', (eq[0] + 0.02, eq[1] + 0.02), fontsize=12)
+
     plt.show()
 
-# Interactive slider
+# Set up interactive sliders for alpha and beta parameters
 interact(plot_phase_diagram,
          alpha=FloatSlider(min=0, max=2, step=0.1, value=1, description='Alpha:'),
          beta=FloatSlider(min=0, max=2, step=0.1, value=1, description='Beta:'))
